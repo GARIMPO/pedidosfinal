@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { PlusCircle, DollarSign, LineChart, Mail } from "lucide-react"
+import { PlusCircle, DollarSign, LineChart, Mail, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("pedidos")
   const { toast } = useToast()
 
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchStatus, setSearchStatus] = useState("todos")
 
   // Carrega dados iniciais
   useEffect(() => {
@@ -55,9 +55,9 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error)
         // Fallback para versão síncrona
-        setPedidos(StorageService.syncLoadPedidos())
-        setTransacoes(StorageService.syncLoadTransacoes())
-        setContatos(StorageService.syncLoadContatos())
+        setPedidos([])
+        setTransacoes([])
+        setContatos([])
         
         toast({
           title: "Atenção",
@@ -223,22 +223,15 @@ export default function Dashboard() {
   const pedidosEmAndamento = pedidos.filter((p) => p.status === "producao" || p.status === "pronto")
   const pedidosConcluidos = pedidos.filter((p) => p.status === "enviado")
 
-  // Função para filtrar pedidos baseado no termo de busca
-  const filtrarPedidos = (pedidos: Pedido[], termo: string) => {
-    if (!termo) return pedidos
-
-    const termoLower = termo.toLowerCase()
-    return pedidos.filter(
-      (pedido) =>
-        pedido.nome.toLowerCase().includes(termoLower) ||
-        pedido.email?.toLowerCase().includes(termoLower) ||
-        pedido.telefone?.toLowerCase().includes(termoLower)
-    )
+  // Função para filtrar pedidos baseado no status
+  const filtrarPedidos = (pedidos: Pedido[], status: string) => {
+    if (status === "todos") return pedidos
+    return pedidos.filter((pedido) => pedido.status === status)
   }
 
-  // Filtrar pedidos baseado no termo de busca
-  const pedidosEmAndamentoFiltrados = filtrarPedidos(pedidosEmAndamento, searchTerm)
-  const pedidosConcluidosFiltrados = filtrarPedidos(pedidosConcluidos, searchTerm)
+  // Filtrar pedidos baseado no status
+  const pedidosEmAndamentoFiltrados = filtrarPedidos(pedidosEmAndamento, searchStatus)
+  const pedidosConcluidosFiltrados = filtrarPedidos(pedidosConcluidos, searchStatus)
 
   const formatarValor = (valor: number) => {
     return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -254,6 +247,25 @@ export default function Dashboard() {
     setContatos(data.contatos)
   }
 
+  const limparDados = async () => {
+    try {
+      await StorageService.clearAllData();
+      setPedidos([]);
+      setTransacoes([]);
+      setContatos([]);
+      toast({
+        title: "Dados limpos",
+        description: "Todos os dados foram resetados com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível limpar os dados.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <main className="container mx-auto py-6 px-4">
       <div className="flex flex-col space-y-6">
@@ -266,7 +278,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="mt-4 max-w-md">
-              <PedidoSearch onSearch={setSearchTerm} />
+              <PedidoSearch onSearch={setSearchStatus} />
             </div>
           </div>
           <div className="flex flex-col gap-2 w-full md:w-auto">

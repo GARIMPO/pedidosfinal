@@ -1,13 +1,14 @@
-import type React from "react"
+import type { Metadata } from "next"
 import "@/app/globals.css"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import Footer from "@/components/footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Sistema de Gerenciamento de Pedidos",
-  description: "Acompanhe o status e detalhes de todos os seus pedidos",
+export const metadata: Metadata = {
+  title: "Sistema de Pedidos",
+  description: "Sistema de gerenciamento de pedidos e finanças",
   generator: 'v0.dev',
   manifest: '/manifest.json',
   themeColor: '#000000',
@@ -27,13 +28,18 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.svg" />
         <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icon-192x192.svg" />
         <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icon-512x512.svg" />
+        <meta name="theme-color" content="#ffffff" />
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
+          <div className="min-h-screen flex flex-col">
+            {children}
+            <Footer />
+          </div>
         </ThemeProvider>
         <script dangerouslySetInnerHTML={{
           __html: `

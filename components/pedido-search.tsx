@@ -2,20 +2,26 @@
 
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface PedidoSearchProps {
-  onSearch: (term: string) => void
+  onSearch: (status: string) => void
 }
 
 export default function PedidoSearch({ onSearch }: PedidoSearchProps) {
   return (
-    <div className="relative">
-      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder="Buscar por nome, email ou telefone..."
-        className="pl-8"
-        onChange={(e) => onSearch(e.target.value)}
-      />
+    <div className="flex items-center gap-2">
+      <Select onValueChange={onSearch}>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Filtrar por status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="todos">Todos</SelectItem>
+          <SelectItem value="producao">Em Produção</SelectItem>
+          <SelectItem value="pronto">Pronto</SelectItem>
+          <SelectItem value="enviado">Enviado</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   )
 } 

@@ -110,6 +110,8 @@ const loadData = async <T>(storeName: string, defaultValue: T[]): Promise<T[]> =
         if (request.result.length > 0) {
           resolve(request.result);
         } else {
+          // Limpa o localStorage quando não há dados no IndexedDB
+          localStorage.removeItem(storeName);
           resolve(defaultValue);
         }
       };
@@ -121,8 +123,9 @@ const loadData = async <T>(storeName: string, defaultValue: T[]): Promise<T[]> =
   } catch (error) {
     console.error(`Erro ao carregar dados (${storeName}):`, error);
     
-    // Fallback para localStorage
-    return fallbackLoadFromLocalStorage(storeName, defaultValue);
+    // Limpa o localStorage em caso de erro
+    localStorage.removeItem(storeName);
+    return defaultValue;
   }
 };
 
@@ -159,11 +162,7 @@ export const saveTransacoes = async (transacoes: Transacao[]): Promise<void> => 
 };
 
 export const loadTransacoes = async (): Promise<Transacao[]> => {
-  const defaultTransacoes: Transacao[] = [
-    { id: "1", tipo: "receita", descricao: "Vendas iniciais", valor: 1500, data: new Date().toISOString() },
-    { id: "2", tipo: "despesa", descricao: "Materiais", valor: 600, data: new Date().toISOString() },
-  ];
-  return await loadData<Transacao>(STORES.TRANSACOES, defaultTransacoes);
+  return await loadData<Transacao>(STORES.TRANSACOES, []);
 };
 
 export const saveContatos = async (contatos: Contato[]): Promise<void> => {
@@ -186,7 +185,7 @@ export const initializeAppVersion = async (): Promise<void> => {
     
     getRequest.onsuccess = () => {
       if (!getRequest.result) {
-        // Se não existir, adiciona
+        // Se não existir, apenas adiciona a versão
         store.add({ id: "version", value: CURRENT_APP_VERSION });
       }
     };
@@ -213,16 +212,33 @@ const syncLoadPedidos = (): Pedido[] => {
 
 const syncLoadTransacoes = (): Transacao[] => {
   const storedData = localStorage.getItem(STORES.TRANSACOES);
-  const defaultTransacoes: Transacao[] = [
-    { id: "1", tipo: "receita", descricao: "Vendas iniciais", valor: 1500, data: new Date().toISOString() },
-    { id: "2", tipo: "despesa", descricao: "Materiais", valor: 600, data: new Date().toISOString() },
-  ];
-  return storedData ? JSON.parse(storedData) : defaultTransacoes;
+  return storedData ? JSON.parse(storedData) : [];
 };
 
 const syncLoadContatos = (): Contato[] => {
   const storedData = localStorage.getItem(STORES.CONTATOS);
   return storedData ? JSON.parse(storedData) : [];
+};
+
+// Função para limpar todos os dados
+export const clearAllData = async (): Promise<void> => {
+  try {
+    const db = await initDatabase();
+    
+    // Limpar cada store
+    for (const storeName of Object.values(STORES)) {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      store.clear();
+    }
+    
+    // Limpar localStorage
+    for (const storeName of Object.values(STORES)) {
+      localStorage.removeItem(storeName);
+    }
+  } catch (error) {
+    console.error("Erro ao limpar dados:", error);
+  }
 };
 
 // Exporta um objeto com todas as funções para facilitar importação
@@ -235,6 +251,7 @@ const StorageService = {
   saveContatos,
   loadContatos,
   initializeAppVersion,
+  clearAllData,
   
   // Funções síncronas para compatibilidade
   syncLoadPedidos,
